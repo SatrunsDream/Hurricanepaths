@@ -2,6 +2,8 @@
 ibtracs.ALL.list.v04r01.csv
 hurricane_paths_cleaned.pkl
 hurricane_paths_cleaned.csv
+hurricane_paths_processed.pkl
+hurricane_paths_processed.csv
 dataset_summary.json
 
 # Python

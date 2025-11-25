@@ -13,10 +13,12 @@
 ### Data Files
 - `ibtracs.ALL.list.v04r01.csv` - Main dataset containing hurricane track data from 1842-2025
 - `dataset_summary.json` - Structured metadata summary generated during EDA (722K observations, 174 columns, 13.5K storms)
+- `hurricane_paths_processed.pkl` - Processed dataset ready for Kalman filter (721,960 observations, 13,450 storms)
+- `hurricane_paths_processed.csv` - Processed dataset in CSV format
 
 ### Analysis Notebooks
 - `eda_cleaning.ipynb` - Exploratory Data Analysis and data cleaning (COMPLETED)
-- `feature_engineering.ipynb` - Feature engineering for Kalman filter (TO BE CREATED)
+- `features_engineering.ipynb` - Feature engineering for Kalman filter (COMPLETED)
 
 ### Documentation
 - `README.md` - Project overview and setup instructions
@@ -174,56 +176,34 @@
 
 ---
 
-## Phase 2: Feature Engineering (TO BE CREATED)
+## Phase 2: Feature Engineering (COMPLETED)
 
-### File: `feature_engineering.ipynb`
+### File: `features_engineering.ipynb`
 
-#### Planned Objectives
-1. Filter dataset to appropriate storms/basin
-2. Handle missing velocity data (compute from positions for 80 single-obs storms)
-3. Unit standardization (knots → km/h or m/s)
-4. Derive velocity components (v_lat, v_lon from speed/direction)
-5. Optional: Acceleration features
-6. Temporal features (storm age, seasonality)
-7. Prepare data for Kalman filter implementation
+The feature engineering phase transforms the cleaned IBTrACS dataset into a format suitable for Kalman filter implementation. The process begins by carrying over the data cleaning function from the EDA phase, which handles the IBTrACS two-header format, normalizes column names, replaces blank values with NaN, performs type conversions for mixed-type columns, and converts timestamps to datetime format.
 
-#### Recommended Steps
+Data filtering was implemented to ensure only storms with sufficient observations for velocity computation are included. The dataset is filtered to storms with at least two observations, as velocity requires position differences between consecutive time steps. Single-observation storms are excluded, resulting in a filtered dataset of 13,450 valid storms from the original 13,530.
 
-**Step 1: Data Filtering**
-- Filter storms with ≥2 observations (minimum for velocity)
-- Optionally filter to specific basin (e.g., North Atlantic)
-- Remove or handle single-observation storms
+Velocity computation addresses the minimal missing velocity data by implementing a physics-based approach. A function was created to compute velocity from position differences using haversine distance calculations. This function handles longitude wrapping at ±180 degrees, converts geographic coordinates to kilometers accounting for latitude-dependent longitude scaling, and computes both speed and direction. Missing velocity values are filled using this computational method rather than statistical imputation, as the missing data is minimal (0.01%) and occurs only in storms that now have sufficient observations after filtering.
 
-**Step 2: Velocity Computation**
-- Create function to compute velocity from position differences
-- Fill missing velocity values for single-observation storms
-- Validate computed values against existing data
+The velocity representation was converted to Cartesian components suitable for linear Kalman filter operations. The speed and direction values are transformed into velocity components (v_lat, v_lon) measured in degrees per 6-hour interval. This conversion accounts for the spherical geometry of Earth's surface, with longitude velocity adjusted by the cosine of latitude to maintain proper distance calculations. The state vector is now represented as [latitude, longitude, v_lat, v_lon], which enables linear state-space modeling.
 
-**Step 3: Unit Conversion**
-- Convert storm_speed from knots to consistent units (km/h or m/s)
-- Consider coordinate system (degrees vs. metric)
-- Document conversion factors
+Temporal features were extracted to capture climatological and seasonal effects that may influence storm behavior. Storm age is computed as the hours elapsed since the first observation of each storm. Additional temporal features include day of year and month, which can be used to model seasonal patterns in hurricane tracks. These features follow the approach used in operational forecasting models like T-CLIPER and SHIFOR, which incorporate climatological information.
 
-**Step 4: State Vector Preparation**
-- Define state vector components: [lat, lon, v_lat, v_lon] or [lat, lon, speed, direction]
-- Convert between representations as needed
-- Handle coordinate system (spherical to Cartesian if needed)
+Acceleration features were computed to enhance the state representation. Acceleration is calculated as the change in velocity components over time, providing information about storm motion dynamics beyond simple velocity. This follows trajectory-based modeling approaches similar to the TAB (Trajectory and Beta) model used by the National Hurricane Center, which considers both advection and beta effects in tropical cyclone motion.
 
-**Step 5: Observation Vector Preparation**
-- Define observation components
-- Handle missing observation data
-- Select best data source for each variable
+Additional advanced features were engineered to enhance Kalman filter performance and adaptability. Track curvature was computed to measure how sharply storms are turning, which helps identify when the linear motion assumption breaks down. Latitude regime classification categorizes storms into tropics, subtropics, and mid-latitudes, as storm motion characteristics vary significantly by latitude. Hemisphere indicator and motion regime classification distinguish between westward, poleward/recurving, and low-motion patterns, enabling adaptive model parameters. Storm stage encoding captures the developmental phase of each storm (disturbance, depression, tropical storm, hurricane, extratropical), which affects motion characteristics. Landfall proximity features include both a binary flag for storms within 200 km of land and a land gradient feature tracking the rate of approach to land, as storms behave differently when near coastlines. Beta-drift proxy features approximate Coriolis-related drift effects that influence tropical cyclone motion. Smoothed velocity features using 3-point moving averages reduce observational noise. Autoregressive motion features capture recent motion trends through 6-hour and 12-hour averages, providing context for motion persistence.
 
-**Step 6: Temporal Features**
-- Compute storm age (time since formation)
-- Extract seasonal indicators
-- Calculate time-dependent features
+The final processed dataset contains key state variables including position (lat, lon), velocity components (v_lat, v_lon), original velocity representation (storm_speed, storm_dir), acceleration components (a_lat, a_lon), temporal features, advanced regime and classification features, and metadata (basin, nature). The dataset was validated to ensure no missing values in critical state variables, resulting in 721,960 observations across 13,450 unique storms spanning from 1842 to 2025. The processed dataset is saved in both pickle format (preserving dtypes) and CSV format for compatibility.
 
-**Step 7: Data Validation**
-- Verify feature distributions
-- Check for outliers
-- Validate temporal ordering
-- Ensure data consistency
+**Key Outcomes:**
+- Filtered from 13,530 to 13,450 storms (removed 80 single-observation storms)
+- Final dataset: 721,960 observations with zero missing values in state variables
+- State vector format: [lat, lon, v_lat, v_lon] ready for Kalman filter
+- Velocity components computed in degrees per 6-hour interval
+- Acceleration features computed for enhanced state representation
+- Temporal features included for climatological modeling
+- Advanced features added: track curvature, latitude/motion regimes, landfall proximity, beta-drift proxy, smoothed velocities, autoregressive motion features
 
 ---
 
@@ -266,12 +246,13 @@ EDA & Cleaning (eda_cleaning.ipynb)
     ├── Structure understanding
     └── Summary generation (dataset_summary.json)
     ↓
-Feature Engineering (feature_engineering.ipynb) [TO BE CREATED]
-    ├── Data filtering
-    ├── Velocity computation/filling
-    ├── Unit standardization
-    ├── State/observation vector preparation
-    └── Temporal feature extraction
+Feature Engineering (features_engineering.ipynb) [COMPLETED]
+    ├── Data filtering (storms with ≥2 observations)
+    ├── Velocity computation from positions
+    ├── Cartesian velocity components (v_lat, v_lon)
+    ├── Acceleration features
+    ├── Temporal features (storm age, seasonality)
+    └── Processed dataset saved (hurricane_paths_processed.pkl/csv)
     ↓
 Kalman Filter Implementation [FUTURE]
     ├── Model design
