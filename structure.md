@@ -19,6 +19,7 @@
 ### Analysis Notebooks
 - `eda_cleaning.ipynb` - Exploratory Data Analysis and data cleaning (COMPLETED)
 - `features_engineering.ipynb` - Feature engineering for Kalman filter (COMPLETED)
+- `Kalman_Filter.ipynb` - Kalman filter implementation and evaluation (COMPLETED)
 
 ### Documentation
 - `README.md` - Project overview and setup instructions
@@ -207,31 +208,166 @@ The final processed dataset contains key state variables including position (lat
 
 ---
 
-## Phase 3: Kalman Filter Implementation (FUTURE)
+## Phase 3: Kalman Filter Implementation (COMPLETED)
 
-### Planned Components
+### File: `Kalman_Filter.ipynb`
 
-### Planned Components
+#### Overview
+
+The Kalman Filter implementation provides a probabilistic state-space model for hurricane track prediction using sequential Bayesian inference. The implementation includes a feature-adaptive Kalman filter that adjusts model parameters based on storm characteristics, enabling more accurate predictions for different storm regimes and motion patterns.
+
+#### Data Preparation and Train/Test Split
+
+The processed dataset from feature engineering is loaded, containing 721,960 observations from 13,450 storms with metric coordinates. The data is split at the storm level (80/20) to ensure no data leakage between training and testing phases. This results in 10,759 training storms (577,711 observations) and 2,690 test storms (144,247 observations).
+
+Storms are filtered to include only those with at least 3 observations to enable proper Kalman filter initialization and evaluation. All storms in the dataset use metric coordinates (x_km, y_km, vx_km, vy_km) which enable linear state-space modeling.
 
 #### State-Space Model Design
-- **State Vector (x_t)**: [latitude, longitude, velocity_lat, velocity_lon] or equivalent
-- **Observation Vector (y_t)**: [observed_lat, observed_lon] (possibly with intensity measures)
-- **Transition Matrix (A)**: Linear dynamics model
-- **Observation Matrix (H)**: Maps state to observations
-- **Process Noise Covariance (Q)**: Uncertainty in storm motion
-- **Observation Noise Covariance (R)**: Uncertainty in position measurements
 
-#### Kalman Filter Algorithm
-1. **Initialization**: Initial state estimate and covariance
-2. **Prediction Step**: Predict state at next time step
-3. **Update Step**: Incorporate new observation
-4. **Forecast Generation**: One-step-ahead predictions
+The Kalman filter uses a constant velocity model with the following specifications:
 
-#### Evaluation
-- Forecast error computation
-- Comparison with actual best-track positions
-- Error statistics (mean error, RMSE, etc.)
-- Visualization of forecast tracks
+**State Vector (x_t)**: [x_km, y_km, vx_km, vy_km] in metric coordinates
+- x_km: east-west position in km (relative to storm start)
+- y_km: north-south position in km (relative to storm start)  
+- vx_km: east-west velocity in km per 6 hours
+- vy_km: north-south velocity in km per 6 hours
+
+**Observation Vector (y_t)**: [x_km, y_km] - observed positions only
+
+**Transition Matrix (A)**: Implements constant velocity dynamics
+- Position updates linearly with velocity: x_{t+1} = x_t + vx, y_{t+1} = y_t + vy
+- Velocities remain constant: vx_{t+1} = vx_t, vy_{t+1} = vy_t
+
+**Observation Matrix (H)**: Maps state to observations by selecting position components only
+
+#### HurricaneKalmanFilter Class Implementation
+
+The core filter class implements the standard Kalman filter algorithm with several enhancements:
+
+**Core Methods:**
+- `initialize()`: Sets initial state estimate and covariance matrix
+- `predict()`: Forecasts next state using transition dynamics and process noise
+- `update()`: Incorporates new observation using Kalman gain to update state and covariance
+- `forecast()`: Generates multi-step ahead forecasts for probabilistic forecasting
+
+**Feature-Adaptive Parameters:**
+
+The filter implements adaptive process noise (Q) scaling based on storm features, which allows the model to account for increased uncertainty during specific conditions:
+
+- Track curvature: Higher Q (up to 3×) when storms are turning sharply, indicating breakdown of linear motion assumption
+- Land approach: 1.5× Q scaling when storms are within 200 km of land, as storms behave unpredictably near coastlines
+- Motion regimes: Different Q scaling for westward (1.1×), poleward/recurving (1.3×), and low-motion (1.0×) patterns
+- Latitude regimes: 1.2× Q scaling in mid-latitudes where storms interact with extratropical systems
+
+This adaptive approach enables the filter to dynamically adjust uncertainty estimates based on storm characteristics, improving prediction accuracy across diverse storm conditions.
+
+#### Parameter Estimation from Training Data
+
+Process noise covariance (Q) and observation noise covariance (R) are estimated directly from training data using a sample of 200 storms with at least 5 observations each.
+
+**Process Noise Q Estimation:**
+Q is estimated by computing the covariance of innovations (differences between predicted and actual state transitions) under the constant velocity model. This captures the inherent uncertainty in storm motion dynamics.
+
+**Observation Noise R Estimation:**
+R is estimated from observation residuals (innovation) during filtering. The estimation uses actual filtered states versus observed positions, properly capturing best-track uncertainty including coordinate conversion noise. The estimated R has a minimum threshold of 0.25 km² variance to account for best-track measurement uncertainty (approximately 0.5 km standard deviation).
+
+**Estimated Parameters (from training sample):**
+- Q (process noise): Large covariance values reflecting high uncertainty in storm motion dynamics, with significant cross-correlations between position and velocity components
+- R (observation noise): Estimated at approximately 264.92 km² variance for x-coordinate and 168.61 km² variance for y-coordinate, reflecting realistic best-track uncertainty
+
+#### Filtering Implementation
+
+The `run_kalman_filter_on_storm()` function applies the Kalman filter to a single storm track with optional feature adaptation. The function initializes the filter with the first observation, then sequentially performs prediction and update steps for each subsequent observation. Feature adaptation occurs before each prediction step, allowing the filter to adjust parameters dynamically as the storm evolves.
+
+The function returns filtered states, one-step-ahead predictions, observations, covariance matrices, and reference coordinates for visualization. This implementation evaluates filtering accuracy (tracking with updates), which provides an upper bound on model performance.
+
+#### Evaluation Results
+
+**Single Storm Test:**
+A test storm with 65 observations demonstrated filtering accuracy with mean forecast error of 10.15 km, RMSE of 13.37 km, and median error of 8.25 km. These results represent one-step-ahead prediction accuracy with full observations available at each step.
+
+**Test Set Evaluation (Filtering Mode):**
+Evaluation on 2,680 test storms with at least 5 observations shows:
+- Mean forecast error: 21.13 km
+- RMSE: 26.85 km  
+- Median error: 16.85 km
+
+Error distribution statistics indicate consistent performance across diverse storms, with the majority of storms showing errors between 13.79 km and 25.14 km (interquartile range). Maximum errors reach 203 km, likely corresponding to storms with rapid motion changes or unusual track patterns.
+
+#### Open-Loop Forecasting Implementation
+
+A critical distinction was made between filtering accuracy (evaluating the filter's ability to track storms with continuous updates) and true forecasting accuracy (evaluating predictions without future observations). Two new functions were implemented for proper open-loop forecasting evaluation:
+
+**`initialize_filter_from_observations()`:**
+Initializes the filter using observations up to a specified time index (t0), then returns the filter in its state at that time. This provides the starting point for open-loop forecasting where no future observations are used.
+
+**`open_loop_forecast()`:**
+Generates true open-loop forecasts by initializing from observations up to t0, then forecasting ahead for a specified number of steps WITHOUT any updates. This evaluates actual forecast skill rather than tracking accuracy. The function returns forecasts, true observations, errors, and distance errors for each lead time.
+
+**`evaluate_sliding_origins()`:**
+Implements sliding origin evaluation, where forecasts are generated from multiple points along each storm track rather than only from the storm origin. This provides more robust and representative forecast statistics by sampling diverse storm phases (early development, mature stage, decay, etc.).
+
+For each storm, the function:
+- Identifies valid forecast origins (requiring sufficient history and future data)
+- Samples origins evenly spaced along the track (configurable number per storm)
+- Generates open-loop forecasts from each origin for multiple lead times
+- Aggregates errors across all origins and storms
+
+**Open-Loop Forecast Results:**
+Evaluation with sliding origins on 20 storms with 555 total forecast instances shows realistic error growth with lead time:
+
+- **6 hours**: Mean error 11.90 km, RMSE 15.86 km
+- **12 hours**: Mean error 24.53 km, RMSE 34.50 km  
+- **24 hours**: Mean error 58.13 km, RMSE 83.79 km
+- **48 hours**: Mean error 158.95 km, RMSE 216.74 km
+- **72 hours**: Mean error 286.08 km, RMSE 379.35 km
+
+These results demonstrate the expected monotonic error growth with increasing lead time, confirming that the open-loop forecasting correctly captures forecast skill rather than filtering accuracy. The errors are realistic for hurricane track forecasting, with 48-hour errors comparable to operational model guidance.
+
+#### Visualization and Analysis Tools
+
+**Track Visualization:**
+Functions convert metric coordinates back to latitude/longitude for geographic visualization. The track plots display actual storm tracks alongside Kalman filter predictions, enabling visual assessment of filter performance.
+
+**Error Analysis:**
+Error plots show forecast errors over time, allowing identification of periods where the filter performs well or poorly. This helps understand model limitations and identify storm phases where predictions are less reliable.
+
+**Spaghetti Plots:**
+Monte Carlo simulation generates multiple forecast paths from the current filter state, creating probabilistic "spaghetti" plots that visualize forecast uncertainty. This enables assessment of forecast spread and uncertainty quantification.
+
+#### Key Implementation Fixes
+
+Several critical issues were identified and resolved during implementation:
+
+**Issue 1: Observation Noise Estimation**
+The original implementation hard-coded R to an unrealistically small value (0.25 km²), leading to overconfident observations. The fix estimates R from actual observation residuals during filtering, providing realistic uncertainty estimates (approximately 265 km² and 169 km² for x and y coordinates).
+
+**Issue 2: Filtering vs Forecasting Evaluation**  
+The original `run_kalman_filter_on_storm()` function updates with true observations at every step, evaluating filtering accuracy rather than forecasting skill. New functions (`open_loop_forecast()`, `evaluate_sliding_origins()`) were implemented to properly evaluate open-loop forecasting where no future observations are used.
+
+**Issue 3: Single Origin Evaluation**
+Initial evaluation only forecasted from storm origins, biasing results toward early straight-moving phases. Sliding origin evaluation addresses this by forecasting from multiple points along each track, providing representative statistics across diverse storm phases.
+
+**Issue 4: Feature Extraction Robustness**
+Feature extraction was improved to handle pandas Series and array types safely, preventing type errors when accessing feature values from DataFrame rows. A helper function ensures scalar values are extracted correctly for parameter adaptation.
+
+#### Findings and Insights
+
+The Kalman filter implementation demonstrates that a relatively simple constant velocity model can achieve reasonable forecast accuracy for hurricane tracks, particularly at short lead times. The feature-adaptive parameter scaling provides significant flexibility to handle diverse storm conditions.
+
+Key findings include:
+
+1. **Short-term accuracy**: 6-hour forecasts achieve approximately 12 km mean error, suitable for operational use in track prediction.
+
+2. **Error growth pattern**: Errors increase approximately quadratically with lead time, consistent with cumulative process noise in the constant velocity model. This matches expectations for linear dynamical systems.
+
+3. **Feature adaptation value**: Adaptive Q scaling based on storm characteristics enables better handling of turning storms, land interactions, and regime changes, though the constant velocity assumption still limits performance for sharp turns.
+
+4. **Observation uncertainty**: Estimated observation noise is larger than initially assumed, reflecting realistic best-track uncertainty and coordinate conversion errors. This leads to more appropriate uncertainty quantification.
+
+5. **Limitations**: The constant velocity model struggles with rapid motion changes, sharp turns, and extratropical transitions. Future improvements could incorporate acceleration terms or non-linear dynamics.
+
+The implementation provides a solid foundation for probabilistic hurricane track forecasting, with clear paths for enhancement through more sophisticated dynamics models or machine learning approaches.
 
 ---
 
@@ -254,11 +390,12 @@ Feature Engineering (features_engineering.ipynb) [COMPLETED]
     ├── Temporal features (storm age, seasonality)
     └── Processed dataset saved (hurricane_paths_processed.pkl/csv)
     ↓
-Kalman Filter Implementation [FUTURE]
-    ├── Model design
-    ├── Parameter estimation
-    ├── Filter implementation
-    └── Forecast evaluation
+Kalman Filter Implementation (Kalman_Filter.ipynb) [COMPLETED]
+    ├── Model design with metric coordinates
+    ├── Parameter estimation from training data
+    ├── Filter implementation with feature adaptation
+    ├── Open-loop forecasting evaluation
+    └── Sliding origin evaluation
 ```
 
 ---
@@ -282,32 +419,27 @@ Kalman Filter Implementation [FUTURE]
 
 ---
 
-## Next Steps
+## Next Steps (Future Enhancements)
 
-1. **Create `feature_engineering.ipynb`**
-   - Start with data filtering
-   - Implement velocity computation function
-   - Standardize units
+1. **Model Improvements**
+   - Incorporate acceleration terms into state vector for better handling of motion changes
+   - Implement non-linear dynamics models for improved accuracy during sharp turns
+   - Add intensity forecasting using wind speed or pressure observations
 
-2. **Design State-Space Model**
-   - Define state vector representation
-   - Design transition model
-   - Design observation model
+2. **Advanced Features**
+   - Ensemble forecasting with multiple model configurations
+   - Machine learning enhancements for parameter adaptation
+   - Basin-specific model tuning and evaluation
 
-3. **Estimate Parameters**
-   - Estimate process noise covariance Q
-   - Estimate observation noise covariance R
-   - Tune model parameters
+3. **Evaluation Enhancements**
+   - Compare with operational forecast models (CLIPER, SHIFOR, NHC guidance)
+   - Detailed analysis of error patterns by storm characteristics
+   - Cross-validation and robustness testing across different time periods
 
-4. **Implement Kalman Filter**
-   - Write filter algorithm
-   - Test on sample storms
-   - Validate predictions
-
-5. **Evaluate and Visualize**
-   - Compute forecast errors
-   - Generate "spaghetti" plots
-   - Compare with benchmark models
+4. **Visualization and Reporting**
+   - Interactive forecast visualization tools
+   - Automated forecast report generation
+   - Real-time forecast monitoring dashboard
 
 ---
 
