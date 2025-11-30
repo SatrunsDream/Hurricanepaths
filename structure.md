@@ -369,6 +369,74 @@ Key findings include:
 
 The implementation provides a solid foundation for probabilistic hurricane track forecasting, with clear paths for enhancement through more sophisticated dynamics models or machine learning approaches.
 
+#### Advanced Improvements: Data-Driven Parameter Estimation and Hyperparameter Tuning
+
+Following the initial implementation, significant improvements were made to enhance the Kalman filter's adaptability and performance through systematic parameter estimation and hyperparameter optimization. These improvements address the limitations of fixed heuristic parameters and enable the model to learn optimal adaptive behavior from training data.
+
+**Process and Observation Noise Estimation from Training Data**
+
+The original implementation used fixed default values for process noise covariance (Q) and observation noise covariance (R), which did not reflect the actual uncertainty characteristics of hurricane motion. A new estimation framework was implemented that directly learns these parameters from training data. The `estimate_process_noise()` function computes Q by analyzing state transition residuals across training storms. For each storm, the function compares actual state transitions with predictions from the constant velocity model, collecting innovation residuals that represent the true process uncertainty. The covariance of these residuals across all training storms provides an empirical estimate of Q that captures the inherent variability in hurricane motion dynamics.
+
+Similarly, observation noise R is estimated using a simplified approach that sets a fixed diagonal covariance based on typical best-track position uncertainty. Best-track data has approximately 0.5 to 1.0 km standard deviation in position measurements, leading to an R matrix with 0.25 to 1.0 km² variance per coordinate. The `fit_QR()` wrapper function coordinates both estimations, providing a unified interface for parameter fitting that ensures Q and R are estimated consistently from the same training subset.
+
+**Time-Varying Adaptive Process Noise**
+
+The original feature-adaptive approach used fixed heuristic scaling factors that were not optimized for actual forecast performance. This was replaced with a more flexible system that computes time-varying process noise Q_t at each forecast step based on storm features. The `compute_Q_scale()` function calculates a scaling factor s_t that multiplies the base Q to produce Q_t = s_t × Q_base. This scaling factor incorporates multiple storm characteristics including track curvature (clipped at the 95th percentile to prevent extreme values), land approach indicators, motion regime classifications, and latitude regime information.
+
+The scaling computation was made robust to handle missing features gracefully. Rather than requiring all features to be present, the system now works with any available subset of features, preventing silent disabling of adaptive behavior when some features are missing. Each feature term is only applied if that feature column exists in the data, and the function safely handles NaN values and missing keys. This lenient approach ensures adaptive Q remains functional even with partial feature sets.
+
+**Hyperparameter Tuning Framework**
+
+A comprehensive hyperparameter tuning system was implemented to optimize the adaptive Q scaling parameters. The tuning framework uses random search over a predefined parameter space, evaluating each candidate set of parameters on a validation subset. The training data is split into three parts: inner training set (80% of training storms) for fitting Q and R, validation set (20% of training storms) for hyperparameter evaluation, and test set (20% of all storms) reserved for final evaluation only.
+
+The `tune_adaptive_Q()` function implements the tuning loop, sampling adaptive parameters from reasonable ranges for each trial. For each sampled parameter set, the function fits Q and R on the inner training set, then evaluates open-loop forecasts on the validation set using those parameters. The objective function is a weighted combination of 24-hour and 48-hour RMSE, providing a balanced metric that emphasizes medium-range forecast accuracy. The tuning process tracks the best parameters across all trials and provides detailed logging of trial results.
+
+To ensure tuning efficiency, the evaluation uses subsets of validation storms and limits the number of forecast origins per storm. The tuning function includes verification checks that sample scaling factors to confirm parameters are actually affecting the model behavior. This prevents situations where tuning appears to run but parameters have no effect due to implementation issues.
+
+**Critical Implementation Fixes**
+
+Several critical logical errors were identified and resolved that were preventing the adaptive Q system from functioning correctly. The most significant issue was a feature gate that required all six feature columns to be present before enabling adaptive Q. This strict requirement meant that if any single feature was missing, adaptive Q would silently disable, causing all tuning efforts to have no effect. The fix changed the requirement to only needing at least one feature column, with the scaling function gracefully handling missing features.
+
+Another critical issue involved parameter shadowing, where the original `adaptive_params` dictionary defined early in the notebook could be used instead of the tuned `best_params_tuned` values. This was resolved by renaming the default parameters to `default_adaptive_params` and ensuring all final evaluations explicitly use `best_params_tuned` with error checking to prevent accidental use of default values.
+
+The forecast pathway was also clarified to distinguish between the old `open_loop_forecast()` function that uses internal heuristic adaptation and the new `open_loop_forecast_improved()` function that uses the tuned parameters. The improved function explicitly accepts Q_base, use_adaptive_Q flag, and adaptive_params as arguments, ensuring tuned parameters are properly propagated through the forecast chain.
+
+**Validation and Verification Systems**
+
+Comprehensive verification systems were added to ensure the improvements are functioning correctly. A feature availability check examines which adaptive Q features are present in the dataset and reports coverage statistics. This helps identify when adaptive Q may be limited by missing features. The tuning process includes verification prints that show sample scaling factors for early trials, confirming that different parameter sets produce different Q scaling behavior.
+
+A verification test compares baseline forecasts (with adaptive Q disabled) against improved forecasts (with adaptive Q enabled) on a single test storm. This test prints debug information showing scaling factors and Q values at each step, making it clear when adaptive Q is actually being applied. The test confirms that forecast errors differ between baseline and improved models, proving that the adaptive system is functioning.
+
+**Results and Impact**
+
+The improvements enable systematic optimization of adaptive Q parameters rather than relying on fixed heuristics. The data-driven Q and R estimation provides more realistic uncertainty quantification that reflects actual hurricane motion variability. The hyperparameter tuning framework allows the model to learn optimal scaling factors from validation performance, potentially improving forecast accuracy beyond what fixed parameters can achieve.
+
+The lenient feature handling ensures adaptive Q remains functional across diverse data conditions, while the verification systems provide confidence that improvements are actually being applied. The separation of training, validation, and test sets ensures proper evaluation without data leakage, and the explicit parameter passing prevents accidental use of default values in final evaluations.
+
+These improvements transform the Kalman filter from a model with fixed adaptive heuristics into a system that can learn optimal adaptive behavior from data, providing a foundation for continued performance enhancement through systematic hyperparameter optimization.
+
+**Feature Validation: Testing the Predictive Power of Adaptive Features**
+
+A critical validation step was implemented to empirically test whether the chosen adaptive features actually predict forecast uncertainty. This analysis addresses a fundamental question: do features like track curvature, land approach, and motion regime correlate with periods where the Kalman filter makes larger prediction errors? The validation framework runs the base non-adaptive model on training storms and collects innovation statistics at each time step. For each forecast step, the system records the innovation v_t = y_t - H*x_pred, computes innovation squared (v_t²) as a measure of prediction error, and associates these errors with the corresponding feature values at that time step.
+
+The `collect_innovation_data()` function implements this data collection by running the Kalman filter with fixed Q and R parameters, then extracting innovations and features at each time step across hundreds of training storms. This creates a dataset linking feature values to actual forecast errors, enabling direct correlation analysis. The function also computes Mahalanobis distance, which provides a more principled uncertainty measure that accounts for the innovation covariance structure.
+
+The `analyze_feature_uncertainty_correlation()` function performs the correlation analysis, testing whether high feature values correspond to larger innovation squared values. For track curvature, the analysis compares innovation squared between high-curvature periods (above median) and low-curvature periods (below median), computing a ratio that indicates how much larger errors are during turning phases. Similarly, the analysis compares innovation squared when storms are approaching land versus when they are over open water, and examines differences across motion regimes and latitude regimes.
+
+The analysis also includes an optional regression-based approach through the `fit_learned_scaling()` function, which attempts to learn optimal scaling factors directly from the innovation data. This function fits a linear regression model in log space: log(s_t²) ≈ β₀ + β₁*curvature + β₂*land + β₃*motion_regime + β₄*latitude_regime. If this regression achieves high R², it suggests the features are predictive and provides learned coefficients that could replace hand-tuned parameters. If R² is low, it indicates the features do not reliably predict uncertainty.
+
+**Validation Results and Implications**
+
+The feature validation analysis revealed that the adaptive features show weak correlation with innovation variance. Track curvature, while showing some relationship with forecast errors, does not demonstrate a strong enough correlation to reliably target periods of increased uncertainty. The ratio between high-curvature and low-curvature innovation squared values is typically close to 1.0, indicating that periods of high curvature do not consistently correspond to larger forecast errors. Similarly, the land approach indicator shows minimal difference in innovation squared between storms near land and those over open water, with ratios typically near unity.
+
+Motion regime and latitude regime classifications also fail to show strong predictive power for forecast uncertainty. The mean innovation squared values across different regimes are similar, suggesting that these categorical features do not capture the conditions where the constant velocity model struggles most. The regression model attempting to learn scaling factors from features achieves low R² scores, typically explaining less than 10% of the variance in innovation squared. This indicates that the chosen features collectively provide limited predictive power for forecast uncertainty.
+
+These findings have important implications for the adaptive Q approach. Since the adaptive features do not reliably predict where forecast errors will be large, inflating Q based on these signals does not effectively target periods of increased storm uncertainty. The adaptive Q system may increase process noise during high-curvature periods or when approaching land, but if these periods do not actually correspond to larger forecast errors, the adaptation provides no benefit and may even degrade performance by over-inflating uncertainty when it is not needed.
+
+As a result of this weak feature-uncertainty correlation, the adaptive-Q model does not significantly outperform the best constant-Q baseline. While the hyperparameter tuning framework successfully identifies parameter sets that work, the fundamental limitation is that the features themselves are not predictive enough to enable meaningful adaptation. This provides a clean explanation for why adaptive Q improvements are modest: the chosen features do not actually line up with where the filter makes big errors. The constant velocity model's prediction errors are driven more by the inherent limitations of the linear dynamics assumption than by the storm characteristics captured in the adaptive features.
+
+This validation step demonstrates the importance of empirically testing feature assumptions rather than assuming that intuitive features will be predictive. The analysis framework provides a principled way to evaluate whether adaptive approaches are justified, and in this case, it reveals that more sophisticated feature engineering or different adaptive strategies may be needed to achieve significant performance gains beyond the constant-Q baseline.
+
 ---
 
 ## Data Flow Summary
