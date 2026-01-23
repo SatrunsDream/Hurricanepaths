@@ -1362,6 +1362,11 @@ def main():
         <p><strong>Steamboard</strong></p>
         <p>Hurricane Model Comparison Dashboard</p>
         <p style="margin-top: 1rem;">Built with Streamlit & Plotly</p>
+        <p style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #ddd;">
+            <a href="https://personal-site-iota-weld.vercel.app" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 500;">
+                By Sardor Sobirov
+            </a>
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
