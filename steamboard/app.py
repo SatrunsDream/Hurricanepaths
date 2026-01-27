@@ -1,5 +1,5 @@
 """
-Steamboard - Hurricane Model Comparison Dashboard
+Streamboard - Hurricane Model Comparison Dashboard
 
 A comprehensive Streamlit dashboard for visualizing and comparing
 hurricane track forecasting model performance, featuring Null Model
@@ -17,7 +17,7 @@ import os
 
 # Page configuration
 st.set_page_config(
-    page_title="Steamboard - Hurricane Model Comparison",
+    page_title="Streamboard - Hurricane Model Comparison",
     page_icon="🌀",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -854,7 +854,7 @@ def page_methodology(data):
     figures_dir = os.path.join(main_repo_dir, "figures")
     
     if not os.path.exists(methodology_path):
-        st.error("methodology.md not found. Please ensure the file exists in the steamboard directory.")
+        st.error("methodology.md not found. Please ensure the file exists in the streamboard directory.")
         return
     
     # Read markdown file
@@ -1335,11 +1335,11 @@ def main():
     data = load_data()
     
     if data is None:
-        st.error("Failed to load data files. Please run `python preprocess_steamboard.py` first.")
+        st.error("Failed to load data files. Please run `python preprocess_streamboard.py` first.")
         return
     
     # Sidebar navigation
-    st.sidebar.title("🌀 Steamboard")
+    st.sidebar.title("🌀 Streamboard")
     st.sidebar.markdown("---")
     
     pages = {
@@ -1359,7 +1359,7 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.markdown("""
     <div style="text-align: center; color: #666; font-size: 0.9rem;">
-        <p><strong>Steamboard</strong></p>
+        <p><strong>Streamboard</strong></p>
         <p>Hurricane Model Comparison Dashboard</p>
         <p style="margin-top: 1rem;">Built with Streamlit & Plotly</p>
         <p style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #ddd;">

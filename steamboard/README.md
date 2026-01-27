@@ -1,8 +1,8 @@
-# Steamboard - Hurricane Model Comparison Dashboard
+# Streamboard - Hurricane Model Comparison Dashboard
 
 ## Overview
 
-Steamboard is a comprehensive Streamlit dashboard for visualizing and comparing hurricane track forecasting model performance, with a focus on the Null Model baseline versus Kalman Filter comparison.
+Streamboard is a comprehensive Streamlit dashboard for visualizing and comparing hurricane track forecasting model performance, with a focus on the Null Model baseline versus Kalman Filter comparison.
 
 ## Setup
 
@@ -17,7 +17,7 @@ pip install -r requirements.txt
 Generate the optimized CSV files for visualization:
 
 ```bash
-python preprocess_steamboard.py
+python preprocess_streamboard.py
 ```
 
 This creates 5 CSV files:

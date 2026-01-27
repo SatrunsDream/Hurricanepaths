@@ -1,4 +1,4 @@
-# Steamboard Quick Start Guide
+# Streamboard Quick Start Guide
 
 ## 🚀 Launch the Dashboard
 
@@ -13,8 +13,8 @@ The preprocessing script should have already created these CSV files:
 
 If not, run:
 ```bash
-cd steamboard
-python preprocess_steamboard.py
+cd streamboard
+python preprocess_streamboard.py
 ```
 
 ### Step 2: Install Dependencies
@@ -89,12 +89,12 @@ The dashboard will automatically open in your browser at `http://localhost:8501`
 ## 🔧 Troubleshooting
 
 **Dashboard won't start:**
-- Check that all CSV files exist in the `steamboard` folder
+- Check that all CSV files exist in the `streamboard` folder
 - Ensure dependencies are installed: `pip install -r requirements.txt`
 - Verify Python version (3.8+)
 
 **Data not loading:**
-- Run `python preprocess_steamboard.py` to regenerate CSV files
+- Run `python preprocess_streamboard.py` to regenerate CSV files
 - Check that data files exist in `../data/` directory
 
 **Charts not displaying:**

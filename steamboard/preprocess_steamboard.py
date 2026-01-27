@@ -364,7 +364,7 @@ def create_storm_metadata(track_data):
 def main():
     """Main preprocessing function"""
     print("=" * 70)
-    print("STEAMBOARD DATA PREPROCESSING")
+    print("STREAMBOARD DATA PREPROCESSING")
     print("=" * 70)
     
     # Get output directory

@@ -4,8 +4,8 @@
 *.pkl
 dataset_summary.json
 
-# Exception: Allow CSV files in steamboard/data/ for dashboard deployment
-!steamboard/data/*.csv
+# Exception: Allow CSV files in streamboard/data/ for dashboard deployment
+!streamboard/data/*.csv
 
 # Python
 __pycache__/

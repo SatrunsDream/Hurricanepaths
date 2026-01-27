@@ -1,8 +1,8 @@
-# Steamboard Dashboard Layout Design
+# Streamboard Dashboard Layout Design
 
 ## Overview
 
-The Steamboard dashboard provides comprehensive visualization and analysis of hurricane track forecasting model performance, with a focus on comparing the Null Model baseline against the Kalman Filter implementation.
+The Streamboard dashboard provides comprehensive visualization and analysis of hurricane track forecasting model performance, with a focus on comparing the Null Model baseline against the Kalman Filter implementation.
 
 ## Dashboard Structure
 
