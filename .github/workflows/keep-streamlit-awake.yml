@@ -1,0 +1,27 @@
+# Keep Streamlit app awake - prevents hibernation on Streamlit Community Cloud
+# Apps sleep after ~1 hour of inactivity; this pings the URL to simulate traffic
+#
+# SETUP: Replace YOUR-STREAMLIT-APP-URL below with your actual deployment URL
+#        e.g. https://hurricanepaths-steamboard-xxxxx.streamlit.app
+
+name: Keep Streamlit Awake
+
+on:
+  schedule:
+    # Run every 30 minutes (adjust as needed: every 20-45 min keeps most apps awake)
+    - cron: '*/30 * * * *'
+  workflow_dispatch:  # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Streamlit app
+        run: |
+          URL="https://hurricanepaths.streamlit.app/"
+          echo "Pinging $URL..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$URL")
+          echo "Response: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Warning: App may be hibernating (status $STATUS). Consider running more frequently."
+          fi

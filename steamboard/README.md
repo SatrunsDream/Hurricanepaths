@@ -54,3 +54,22 @@ The preprocessing script expects these files in the `data/` directory:
 ## Key Findings Highlighted
 
 The dashboard prominently displays the finding that the Null Model (simple persistence) outperforms the Kalman Filter at all lead times, providing essential context for understanding model performance.
+
+## Keeping the App Awake on Streamlit Cloud
+
+Streamlit Community Cloud apps go to sleep after ~1 hour of inactivity. To keep your deployed app always ready:
+
+### Option 1: GitHub Actions (included)
+
+This repo includes `.github/workflows/keep-streamlit-awake.yml` that pings your app every 30 minutes.
+
+**Setup:** Edit the workflow file and replace `YOUR-STREAMLIT-APP-URL` with your actual Streamlit Cloud URL (e.g. `https://hurricanepaths-steamboard-xxxxx.streamlit.app`). Push to GitHub and the workflow will run automatically.
+
+### Option 2: UptimeRobot (no code)
+
+1. Sign up at [uptimerobot.com](https://uptimerobot.com) (free)
+2. Add a new HTTP(s) monitor
+3. Enter your Streamlit app URL
+4. Set check interval to 5 minutes
+
+The periodic requests simulate traffic and prevent the app from sleeping.
