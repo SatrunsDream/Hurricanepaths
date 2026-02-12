@@ -39,3 +39,12 @@ Thumbs.db
 *.tmp
 *.log
 
+# Node / React / Tailwind (never push these)
+node_modules/
+dashboard/node_modules/
+dashboard/dist/
+dashboard/.env
+dashboard/.env.local
+dashboard/npm-debug.log*
+dashboard/.cache/
+
