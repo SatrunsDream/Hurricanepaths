@@ -17,87 +17,93 @@ import os
 
 # Page configuration
 st.set_page_config(
-    page_title="Streamboard - Hurricane Model Comparison",
+    page_title="Hurricane Tracker",
     page_icon="🌀",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for beautiful styling
-st.markdown("""
-    <style>
-    /* Main styling */
-    .main-header {
-        font-size: 3rem;
-        font-weight: 700;
-        background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        margin-bottom: 0.5rem;
-        padding: 1rem 0;
-    }
-    
-    .sub-header {
-        font-size: 1.2rem;
-        color: #666;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    
-    .metric-container {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        color: white;
-        margin: 0.5rem 0;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .metric-label {
-        font-size: 0.9rem;
-        opacity: 0.9;
-        margin-bottom: 0.5rem;
-    }
-    
-    .metric-value {
-        font-size: 2rem;
-        font-weight: bold;
-    }
-    
-    .info-box {
-        background-color: #f8f9fa;
-        border-left: 4px solid #2a5298;
-        padding: 1rem;
-        margin: 1rem 0;
-        border-radius: 4px;
-    }
-    
-    .highlight-box {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        color: white;
-        margin: 1rem 0;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-    }
-    
-    /* Hide Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* Custom tabs styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        padding: 10px 20px;
-        border-radius: 5px;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# Custom CSS - React dashboard inspired (dark sidebar, clean layout)
+# NOTE: No leading indentation - Markdown treats indented blocks as code and displays them as text
+st.markdown("""<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<style>
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%) !important;
+}
+[data-testid="stSidebar"] .stMarkdown, [data-testid="stSidebar"] label, [data-testid="stSidebar"] p {
+    color: #e2e8f0 !important;
+}
+[data-testid="stSidebar"] .stButton > button {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    color: #94a3b8;
+    border: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+    background: #334155;
+    color: white;
+}
+.main .block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    max-width: 1400px;
+}
+.main {
+    background-color: #f8fafc;
+}
+.main-header {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+.sub-header {
+    font-size: 1rem;
+    color: #64748b;
+    margin-bottom: 1.5rem;
+}
+[data-testid="stMetric"] {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    padding: 1rem 1.25rem !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(37, 99, 235, 0.5) !important;
+    box-shadow: 0 2px 4px rgba(29, 78, 216, 0.3) !important;
+}
+[data-testid="stMetric"] *, [data-testid="stMetric"] label, [data-testid="stMetric"] p, [data-testid="stMetric"] div {
+    color: white !important;
+}
+.highlight-box {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    padding: 1.25rem 1.5rem;
+    border-radius: 12px;
+    color: white !important;
+    margin: 1rem 0;
+    box-shadow: 0 4px 6px rgba(29, 78, 216, 0.3);
+}
+.highlight-box h2, .highlight-box p, .highlight-box * {
+    color: white !important;
+    opacity: 1;
+}
+.highlight-box h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+.highlight-box p {
+    font-size: 0.95rem;
+    margin: 0;
+}
+.js-plotly-plot {
+    border-radius: 12px;
+}
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+</style>""", unsafe_allow_html=True)
 
 # Color scheme
 COLORS = {
@@ -165,8 +171,8 @@ def page_model_comparison_overview(data):
     # Key finding highlight
     st.markdown("""
     <div class="highlight-box">
-        <h2 style="margin-top: 0;">🔍 Key Finding</h2>
-        <p style="font-size: 1.1rem; margin-bottom: 0;">
+        <h2><i class="fa-solid fa-lightbulb" style="margin-right: 0.5rem;"></i>Key Finding</h2>
+        <p>
             The <strong>Null Model (simple persistence)</strong> consistently outperforms the 
             <strong>Kalman Filter</strong> at all lead times, demonstrating that simpler 
             approaches can sometimes achieve better results than sophisticated state-space models.
@@ -305,7 +311,7 @@ def page_model_comparison_overview(data):
         st.plotly_chart(fig_improve, use_container_width=True)
     
     # Summary Statistics Table
-    st.subheader("📊 Detailed Performance Metrics")
+    st.markdown("### <i class='fa-solid fa-table' style='color: #64748b; margin-right: 0.5rem;'></i>Detailed Performance Metrics", unsafe_allow_html=True)
     
     display_summary = summary.copy()
     display_summary['improvement_pct'] = ((display_summary['kf_rmse'] - display_summary['null_rmse']) / display_summary['kf_rmse']) * 100
@@ -387,7 +393,7 @@ def page_error_distributions(data):
     null_data = filtered_df[filtered_df['model'] == 'Null Model']['error_km'].dropna()
     
     # Error Distribution with KDE (stacked vertically)
-    st.subheader(f"📊 Error Distribution with KDE at {selected_lead_time}h Lead Time")
+    st.markdown(f"### <i class='fa-solid fa-chart-line' style='color: #64748b; margin-right: 0.5rem;'></i>Error Distribution with KDE at {selected_lead_time}h Lead Time", unsafe_allow_html=True)
     
     fig_hist = go.Figure()
     
@@ -499,7 +505,7 @@ def page_error_distributions(data):
     st.plotly_chart(fig_hist, use_container_width=True)
     
     # Cumulative distribution (stacked below)
-    st.subheader("📈 Cumulative Error Distribution")
+    st.markdown("### <i class='fa-solid fa-chart-area' style='color: #64748b; margin-right: 0.5rem;'></i>Cumulative Error Distribution", unsafe_allow_html=True)
     
     fig_cum = go.Figure()
     
@@ -535,7 +541,7 @@ def page_error_distributions(data):
     st.plotly_chart(fig_cum, use_container_width=True)
     
     # Box plots comparison
-    st.subheader("📦 Error Distribution Comparison (Box Plot)")
+    st.markdown("### <i class='fa-solid fa-chart-simple' style='color: #64748b; margin-right: 0.5rem;'></i>Error Distribution Comparison (Box Plot)", unsafe_allow_html=True)
     
     # Add toggle for log scale
     use_log_scale = st.checkbox("Use logarithmic scale", value=True, help="Log scale helps visualize wide error ranges")
@@ -572,7 +578,7 @@ def page_error_distributions(data):
     st.plotly_chart(fig_box, use_container_width=True)
     
     # Error category breakdown
-    st.subheader("📈 Error Category Breakdown")
+    st.markdown("### <i class='fa-solid fa-chart-pie' style='color: #64748b; margin-right: 0.5rem;'></i>Error Category Breakdown", unsafe_allow_html=True)
     
     category_counts = filtered_df.groupby(['model', 'error_category']).size().reset_index(name='count')
     category_pct = filtered_df.groupby(['model', 'error_category']).size().reset_index(name='count')
@@ -735,7 +741,7 @@ def page_storm_performance(data):
             st.plotly_chart(fig_basin, use_container_width=True)
     
     # Storm ranking table
-    st.subheader("📊 Storm Performance Ranking")
+    st.markdown("### <i class='fa-solid fa-ranking-star' style='color: #64748b; margin-right: 0.5rem;'></i>Storm Performance Ranking", unsafe_allow_html=True)
     
     display_storms = filtered_storms.nlargest(20, 'kf_mean_error')[
         ['sid', 'basin', 'nature', 'kf_mean_error', 'null_mean_error', 'better_model']
@@ -824,7 +830,7 @@ def page_individual_storm_tracker(data):
     st.plotly_chart(fig_trend, use_container_width=True)
     
     # Error metrics table
-    st.subheader("📊 Error Metrics by Lead Time")
+    st.markdown("### <i class='fa-solid fa-table' style='color: #64748b; margin-right: 0.5rem;'></i>Error Metrics by Lead Time", unsafe_allow_html=True)
     
     display_errors = error_by_lead.copy()
     display_errors['kf_error_km'] = display_errors['kf_error_km'].round(2)
@@ -843,491 +849,65 @@ def page_individual_storm_tracker(data):
     )
     
     # Note about map visualization
-    st.info("💡 **Note:** Full track visualization with map overlay requires loading the full track dataset. "
+    st.info("**Note:** Full track visualization with map overlay requires loading the full track dataset. "
             "This feature can be enhanced by loading `hurricane_paths_processed.pkl`.")
 
 def page_methodology(data):
     """Page 6: Methodology & Documentation"""
+    import re
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    methodology_path = os.path.join(script_dir, "methodology.md")
     main_repo_dir = os.path.dirname(script_dir)
+    methodology_path = os.path.join(script_dir, "methodology.md")
     figures_dir = os.path.join(main_repo_dir, "figures")
+    report_path = os.path.join(script_dir, "report.pdf")
+    if not os.path.exists(report_path):
+        report_path = os.path.join(main_repo_dir, "Report", "Sequential_Bayesian_Inference_Applied_to_Hurricane_Tracking.pdf")
     
+    st.markdown('<h1 class="main-header">Methodology & Documentation</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-header">Project overview, model implementations, and evaluation framework</p>', unsafe_allow_html=True)
+    
+    if os.path.exists(report_path):
+        with open(report_path, "rb") as f:
+            pdf_bytes = f.read()
+        st.download_button("Download Report", data=pdf_bytes, file_name="Sequential_Bayesian_Inference_Applied_to_Hurricane_Tracking.pdf", mime="application/pdf", key="download_report")
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Methodology content from methodology.md
     if not os.path.exists(methodology_path):
-        st.error("methodology.md not found. Please ensure the file exists in the streamboard directory.")
+        st.error("methodology.md not found.")
         return
-    
-    # Read markdown file
     with open(methodology_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
-    
-    # Process line by line
-    import re
     i = 0
     current_text_block = []
-    
     while i < len(lines):
         line = lines[i]
-        
-        # Check if this is a figure reference: ![caption](figures/filename.png)
         if '![' in line and 'figures/' in line:
-            # Render accumulated text block first
             if current_text_block:
                 st.markdown(''.join(current_text_block), unsafe_allow_html=True)
                 current_text_block = []
-            
-            # Extract figure info
             match = re.search(r'!\[([^\]]*)\]\(figures/([^)]+)\)', line)
             if match:
                 caption = match.group(1)
                 fig_name = match.group(2)
                 fig_path = os.path.join(figures_dir, fig_name)
-                
-                # Display image
                 if os.path.exists(fig_path):
                     st.image(fig_path, caption=caption if caption else None, use_container_width=True)
                 else:
                     st.warning(f"Figure not found: {fig_name}")
-            
-            # Check if next line is a standalone caption (starts with *)
             if i + 1 < len(lines) and lines[i + 1].strip().startswith('*'):
                 caption_line = lines[i + 1].strip().strip('*').strip()
                 if caption_line:
                     st.caption(caption_line)
-                i += 2  # Skip both the figure line and caption line
+                i += 2
             else:
                 i += 1
             continue
-        
-        # Regular text line
         current_text_block.append(line)
         i += 1
-    
-    # Render any remaining text
     if current_text_block:
         st.markdown(''.join(current_text_block), unsafe_allow_html=True)
-    
-    # Introduction
-    st.markdown("""
-    ## Project Overview
-    
-    This project implements and evaluates probabilistic state-space models for hurricane track forecasting using 
-    sequential Bayesian inference. The primary model is a **Kalman Filter** with adaptive process noise, compared 
-    against a **Null Model** baseline using simple velocity persistence. The evaluation reveals a surprising finding: 
-    the simple persistence baseline consistently outperforms the sophisticated Kalman Filter at all lead times.
-    
-    **Dataset**: IBTrACS (International Best Track Archive for Climate Stewardship)  
-    **Temporal Range**: 1842-2025 (183 years of hurricane track data)  
-    **Total Observations**: 721,960 observations across 13,450 storms  
-    **Objective**: Implement probabilistic hurricane track forecasting using sequential Bayesian inference
-    """)
-    
-    st.divider()
-    
-    # Phase 1: Data Exploration and Cleaning
-    st.markdown("""
-    ## Phase 1: Exploratory Data Analysis and Data Cleaning
-    
-    ### Objectives
-    1. Understand dataset structure and contents
-    2. Assess data quality and completeness
-    3. Identify key variables for Kalman filter state-space model
-    4. Validate temporal structure (6-hour intervals)
-    5. Document data characteristics and units
-    
-    ### Data Loading and Processing
-    
-    The IBTrACS dataset contains hurricane track data with a two-header format requiring specialized parsing. 
-    The data loading function handles:
-    - Two-header format normalization
-    - Column name standardization
-    - Blank value replacement with NaN
-    - Type conversions for mixed-type columns
-    - Datetime conversion for temporal analysis
-    
-    ### Dataset Characteristics
-    
-    - **Size**: 722,040 observations across 13,530 unique storms
-    - **Temporal Range**: 1842-10-25 to 2025-11-23
-    - **Columns**: 174 total columns
-    - **Position Data**: 100% coverage (lat/lon)
-    - **Velocity Data**: 99.99% coverage (storm_speed, storm_dir)
-    - **Temporal Structure**: Regular 6-hour observation intervals confirmed
-    
-    ### Data Quality Assessment
-    
-    Only 80 storms (0.59%) had missing velocity data, all single-observation storms. After filtering to storms 
-    with at least 2 observations (required for velocity computation), we retained 13,450 storms (99.4%) with 
-    complete data coverage.
-    """)
-    
-    # Add storm density figure if available
-    storm_density_path = os.path.join(figures_dir, "fig3_storm_density.png")
-    if os.path.exists(storm_density_path):
-        st.image(storm_density_path, caption="Figure 3: Storm Density Distribution", use_container_width=True)
-    
-    st.divider()
-    
-    # Phase 2: Feature Engineering
-    st.markdown("""
-    ## Phase 2: Feature Engineering
-    
-    ### Velocity Computation
-    
-    Velocity is computed from position differences using haversine distance calculations, handling longitude wrapping 
-    at ±180 degrees and accounting for latitude-dependent longitude scaling. The velocity representation is converted 
-    to Cartesian components (v_lat, v_lon) measured in degrees per 6-hour interval, suitable for linear Kalman filter 
-    operations.
-    
-    ### State Vector Design
-    
-    The state vector is represented as **[lat, lon, v_lat, v_lon]** in degrees, which is then converted to metric 
-    coordinates **[x_km, y_km, vx_km, vy_km]** for the Kalman filter implementation. This conversion accounts for 
-    spherical geometry with longitude velocity adjusted by the cosine of latitude.
-    
-    ### Advanced Features
-    
-    **Temporal Features:**
-    - Storm age (hours elapsed since first observation)
-    - Day of year and month for seasonal patterns
-    
-    **Motion Features:**
-    - Track curvature (measures how sharply storms are turning)
-    - Acceleration components (change in velocity over time)
-    - Smoothed velocities using 3-point moving averages
-    
-    **Regime Classifications:**
-    - Latitude regime (tropics, subtropics, mid-latitudes)
-    - Motion regime (westward, poleward/recurving, low-motion)
-    - Storm stage (disturbance, depression, tropical storm, hurricane, extratropical)
-    
-    **Land Interaction Features:**
-    - Distance to land
-    - Binary flag for storms within 200 km of land
-    - Land gradient (rate of approach to land)
-    
-    **Beta-Drift Proxy:**
-    - Approximates Coriolis-related drift effects
-    
-    ### Final Processed Dataset
-    
-    - **Observations**: 721,960 with zero missing values in state variables
-    - **Storms**: 13,450 unique storms
-    - **Date Range**: 1842 to 2025
-    """)
-    
-    # Add curvature and land interaction figures
-    col1, col2 = st.columns(2)
-    with col1:
-        curvature_path = os.path.join(figures_dir, "fig4_curvature_histogram.png")
-        if os.path.exists(curvature_path):
-            st.image(curvature_path, caption="Figure 4: Track Curvature Distribution", use_container_width=True)
-    
-    with col2:
-        land_path = os.path.join(figures_dir, "fig5_land_interaction.png")
-        if os.path.exists(land_path):
-            st.image(land_path, caption="Figure 5: Land Interaction Analysis", use_container_width=True)
-    
-    st.divider()
-    
-    # Phase 3: Kalman Filter Implementation
-    st.markdown("""
-    ## Phase 3: Kalman Filter Implementation
-    
-    ### State-Space Model Design
-    
-    The Kalman filter uses a **constant velocity model** with the following specifications:
-    
-    **State Vector (x_t)**: [x_km, y_km, vx_km, vy_km] in metric coordinates
-    - x_km: east-west position in km (relative to storm start)
-    - y_km: north-south position in km (relative to storm start)
-    - vx_km: east-west velocity in km per 6 hours
-    - vy_km: north-south velocity in km per 6 hours
-    
-    **Observation Vector (y_t)**: [x_km, y_km] - observed positions only
-    
-    **Transition Matrix (A)**: Implements constant velocity dynamics
-    - Position updates linearly with velocity: x_{t+1} = x_t + vx, y_{t+1} = y_t + vy
-    - Velocities remain constant: vx_{t+1} = vx_t, vy_{t+1} = vy_t
-    
-    **Observation Matrix (H)**: Maps state to observations by selecting position components only
-    """)
-    
-    # Add Kalman filter cycle figure
-    kf_cycle_path = os.path.join(figures_dir, "fig7_kf_cycle.png")
-    if os.path.exists(kf_cycle_path):
-        st.image(kf_cycle_path, caption="Figure 7: Kalman Filter Prediction-Update Cycle", use_container_width=True)
-    
-    st.markdown("""
-    ### Parameter Estimation
-    
-    **Process Noise (Q)**: Estimated from training data by computing the covariance of innovations (differences 
-    between predicted and actual state transitions) under the constant velocity model. This captures the inherent 
-    uncertainty in storm motion dynamics.
-    
-    **Observation Noise (R)**: Estimated from observation residuals during filtering. The estimated R has values of 
-    approximately 264.92 km² variance for x-coordinate and 168.61 km² variance for y-coordinate, reflecting realistic 
-    best-track uncertainty.
-    
-    ### Feature-Adaptive Process Noise
-    
-    The filter implements adaptive process noise (Q) scaling based on storm features:
-    - **Track curvature**: Higher Q (up to 3×) when storms are turning sharply
-    - **Land approach**: 1.5× Q scaling when storms are within 200 km of land
-    - **Motion regimes**: Different Q scaling for westward (1.1×), poleward/recurving (1.3×), and low-motion (1.0×) patterns
-    - **Latitude regimes**: 1.2× Q scaling in mid-latitudes
-    
-    ### Train/Test Split
-    
-    The data is split at the storm level (80/20) to ensure no data leakage:
-    - **Training**: 10,759 storms (577,711 observations)
-    - **Test**: 2,690 storms (144,247 observations)
-    
-    ### Evaluation Framework
-    
-    **Open-Loop Forecasting**: True forecasting evaluation where no future observations are used after initialization.
-    
-    **Sliding Origin Evaluation**: Forecasts are generated from multiple points along each storm track rather than 
-    only from storm origins. This provides robust statistics by sampling diverse storm phases (early development, 
-    mature stage, decay, etc.).
-    
-    For each storm, the function:
-    - Identifies valid forecast origins (requiring sufficient history and future data)
-    - Samples origins evenly spaced along the track
-    - Generates open-loop forecasts from each origin for multiple lead times (6, 12, 24, 48, 72 hours)
-    - Aggregates errors across all origins and storms
-    """)
-    
-    # Add forecast error figures
-    col1, col2 = st.columns(2)
-    with col1:
-        forecast_error_path = os.path.join(figures_dir, "fig8_forecast_error.png")
-        if os.path.exists(forecast_error_path):
-            st.image(forecast_error_path, caption="Figure 8: Forecast Error Analysis", use_container_width=True)
-    
-    with col2:
-        rmse_path = os.path.join(figures_dir, "fig8a_forecast_error_rmse.png")
-        if os.path.exists(rmse_path):
-            st.image(rmse_path, caption="Figure 8a: RMSE by Lead Time", use_container_width=True)
-    
-    st.divider()
-    
-    # Phase 4: Results and Evaluation
-    st.markdown("""
-    ## Phase 4: Results and Evaluation
-    
-    ### Kalman Filter Performance
-    
-    **Open-Loop Forecast Results** (with sliding origins):
-    - **6 hours**: Mean error 11.90 km, RMSE 15.86 km
-    - **12 hours**: Mean error 24.53 km, RMSE 34.50 km
-    - **24 hours**: Mean error 58.13 km, RMSE 83.79 km
-    - **48 hours**: Mean error 158.95 km, RMSE 216.74 km
-    - **72 hours**: Mean error 286.08 km, RMSE 379.35 km
-    
-    These results demonstrate expected monotonic error growth with increasing lead time, confirming that open-loop 
-    forecasting correctly captures forecast skill rather than filtering accuracy.
-    """)
-    
-    # Add error distribution figures
-    col1, col2 = st.columns(2)
-    with col1:
-        error_dist_path = os.path.join(figures_dir, "fig9_error_distribution.png")
-        if os.path.exists(error_dist_path):
-            st.image(error_dist_path, caption="Figure 9: Error Distribution Analysis", use_container_width=True)
-    
-    with col2:
-        rmse_dist_path = os.path.join(figures_dir, "fig9a_rmse_distribution.png")
-        if os.path.exists(rmse_dist_path):
-            st.image(rmse_dist_path, caption="Figure 9a: RMSE Distribution", use_container_width=True)
-    
-    # Error by lead time
-    error_by_lead_path = os.path.join(figures_dir, "fig8b_error_distribution_by_leadtime.png")
-    if os.path.exists(error_by_lead_path):
-        st.image(error_by_lead_path, caption="Figure 8b: Error Distribution by Lead Time", use_container_width=True)
-    
-    st.markdown("""
-    ### Key Findings from Kalman Filter Evaluation
-    
-    1. **Short-term accuracy**: 6-hour forecasts achieve approximately 12 km mean error, suitable for operational use
-    2. **Error growth pattern**: Errors increase approximately quadratically with lead time, consistent with cumulative 
-       process noise in the constant velocity model
-    3. **Feature adaptation**: Adaptive Q scaling enables better handling of turning storms and land interactions, 
-       though the constant velocity assumption still limits performance for sharp turns
-    4. **Observation uncertainty**: Estimated observation noise reflects realistic best-track uncertainty and coordinate 
-       conversion errors
-    5. **Limitations**: The constant velocity model struggles with rapid motion changes, sharp turns, and extratropical 
-       transitions
-    """)
-    
-    # Innovation analysis
-    st.markdown("""
-    ### Innovation Analysis
-    
-    The innovation vector (difference between observed and predicted positions) should cluster around zero with no 
-    systematic directional bias in a well-behaved Kalman filter. Analysis reveals that the filter behaves consistently 
-    with linear-Gaussian assumptions, though adaptive features show weak correlation with forecast uncertainty.
-    """)
-    
-    innovation_path = os.path.join(figures_dir, "fig10_innovation_analysis.png")
-    if os.path.exists(innovation_path):
-        st.image(innovation_path, caption="Figure 10: Innovation Analysis", use_container_width=True)
-    
-    st.divider()
-    
-    # Phase 5: Null Model Baseline
-    st.markdown("""
-    ## Phase 5: Null Model Baseline Evaluation
-    
-    ### Null Model Implementation
-    
-    The null model implements a straightforward **persistence approach** that computes velocity from the difference 
-    between the position at the forecast origin time and the position one time step earlier. This velocity is then used 
-    to extrapolate the storm's position forward in time without any updates or corrections.
-    
-    ### Baseline Performance Results
-    
-    **Test Set Results** (13,892 forecast instances):
-    - **6 hours**: Mean error 13.31 km, RMSE 17.77 km
-    - **12 hours**: Mean error 29.36 km, RMSE 39.53 km
-    - **24 hours**: Mean error 70.56 km, RMSE 95.08 km
-    - **48 hours**: Mean error 183.20 km, RMSE 241.14 km
-    - **72 hours**: Mean error 326.04 km, RMSE 425.59 km
-    
-    ### Comparison with Kalman Filter
-    
-    **Surprising Finding**: The simple persistence baseline **consistently outperforms the Kalman Filter** at all lead times:
-    - **6 hours**: Null Model RMSE 17.77 km vs KF 21.70 km (**22.1% improvement**)
-    - **12 hours**: Null Model RMSE 39.53 km vs KF 45.75 km (**15.7% improvement**)
-    - **24 hours**: Null Model RMSE 95.08 km vs KF 103.90 km (**9.3% improvement**)
-    - **48 hours**: Null Model RMSE 241.14 km vs KF 252.31 km (**4.6% improvement**)
-    - **72 hours**: Null Model RMSE 425.59 km vs KF 438.76 km (**3.1% improvement**)
-    
-    This result has profound implications: the Kalman filter's additional complexity may be introducing errors rather 
-    than reducing them. Possible explanations include:
-    - Suboptimal parameter tuning (process noise Q and observation noise R)
-    - Error accumulation through recursive updating
-    - The null model's direct velocity persistence may be more effective than the filtered state estimates
-    """)
-    
-    # Add model comparison figures
-    model_comp_path = os.path.join(figures_dir, "fig11_model_comparison.png")
-    if os.path.exists(model_comp_path):
-        st.image(model_comp_path, caption="Figure 11: Model Comparison Overview", use_container_width=True)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        rmse_comp_path = os.path.join(figures_dir, "fig11a_rmse_comparison.png")
-        if os.path.exists(rmse_comp_path):
-            st.image(rmse_comp_path, caption="Figure 11a: RMSE Comparison", use_container_width=True)
-    
-    with col2:
-        error_dist_comp_path = os.path.join(figures_dir, "fig11b_error_distribution_comparison.png")
-        if os.path.exists(error_dist_comp_path):
-            st.image(error_dist_comp_path, caption="Figure 11b: Error Distribution Comparison", use_container_width=True)
-    
-    # Null model comparison figures
-    null_rmse_path = os.path.join(figures_dir, "fig_null_vs_kf_rmse_comparison.png")
-    if os.path.exists(null_rmse_path):
-        st.image(null_rmse_path, caption="Null Model vs Kalman Filter RMSE Comparison", use_container_width=True)
-    
-    null_dist_path = os.path.join(figures_dir, "fig_null_vs_kf_error_distributions.png")
-    if os.path.exists(null_dist_path):
-        st.image(null_dist_path, caption="Null Model vs Kalman Filter Error Distributions", use_container_width=True)
-    
-    st.divider()
-    
-    # Visualizations
-    st.markdown("""
-    ## Visualization and Analysis
-    
-    ### Error Trajectories
-    
-    Error spaghetti plots show forecast position error over time for many storms, revealing that most storms follow 
-    similar error growth patterns with errors increasing approximately quadratically with lead time.
-    """)
-    
-    spaghetti_path = os.path.join(figures_dir, "fig15a_error_spaghetti.png")
-    if os.path.exists(spaghetti_path):
-        st.image(spaghetti_path, caption="Figure 15a: Error Trajectories (Spaghetti Plot)", use_container_width=True)
-    
-    st.markdown("""
-    ### Trajectory Visualization
-    
-    Trajectory spaghetti plots show true tracks for many storms aligned at a shared forecast origin, illustrating 
-    the diversity of hurricane trajectories the models are expected to track.
-    """)
-    
-    traj_spaghetti_path = os.path.join(figures_dir, "fig16_trajectory_spaghetti_24h.png")
-    if os.path.exists(traj_spaghetti_path):
-        st.image(traj_spaghetti_path, caption="Figure 16: Trajectory Spaghetti Plot (24h)", use_container_width=True)
-    
-    st.markdown("""
-    ### Example Storm Forecasts
-    
-    Individual storm track visualizations demonstrate how forecasts compare to actual storm tracks, enabling visual 
-    assessment of model performance.
-    """)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        traj1_path = os.path.join(figures_dir, "fig14_trajectory_1852266N1727_24h.png")
-        if os.path.exists(traj1_path):
-            st.image(traj1_path, caption="Example Storm Track 1 (24h)", use_container_width=True)
-    
-    with col2:
-        traj2_path = os.path.join(figures_dir, "fig14_trajectory_1852278N1429_24h.png")
-        if os.path.exists(traj2_path):
-            st.image(traj2_path, caption="Example Storm Track 2 (24h)", use_container_width=True)
-    
-    st.divider()
-    
-    # Conclusions
-    st.markdown("""
-    ## Conclusions and Implications
-    
-    ### Key Findings
-    
-    1. **Null Model Superiority**: Simple velocity persistence outperforms the sophisticated Kalman Filter at all lead times, 
-       demonstrating that simpler approaches can sometimes achieve better results than complex state-space models.
-    
-    2. **Kalman Filter Limitations**: The recursive updating mechanism may be accumulating small errors that compound over 
-       time, while the null model's direct use of the most recent velocity observation avoids this error accumulation.
-    
-    3. **Parameter Sensitivity**: The Kalman filter's performance is highly sensitive to process noise and observation noise 
-       parameters, which may not be optimally tuned despite data-driven estimation.
-    
-    4. **Feature Adaptation**: Adaptive Q scaling based on storm features shows weak correlation with forecast uncertainty, 
-       limiting the benefits of feature-adaptive approaches.
-    
-    5. **Fundamental Limits**: Both models face fundamental limitations in predicting hurricane motion beyond approximately 
-       48 hours, where errors become large regardless of the forecasting method used.
-    
-    ### Implications for Operational Forecasting
-    
-    The superior performance of the null model, combined with its computational simplicity, suggests that for operational 
-    hurricane track forecasting, persistence-based approaches may be more practical than complex state-space models unless 
-    substantial improvements can be demonstrated. The decreasing advantage with lead time indicates that both models face 
-    fundamental limitations in predicting hurricane motion beyond approximately 48 hours.
-    
-    ### Future Directions
-    
-    - Incorporate acceleration terms into state vector for better handling of motion changes
-    - Implement non-linear dynamics models for improved accuracy during sharp turns
-    - Enhanced feature engineering to identify truly predictive features for adaptive approaches
-    - Comparison with operational forecast models (CLIPER, SHIFOR, NHC guidance)
-    """)
-    
-    st.divider()
-    
-    # References
-    st.markdown("""
-    ## References
-    
-    - **IBTrACS Documentation**: https://www.ncei.noaa.gov/sites/g/files/anmtlf171/files/2025-09/IBTrACS_v04r01_column_documentation.pdf
-    - **Bril, G. (1995)**: Forecasting hurricane tracks using the Kalman filter. Environmetrics, 6(1), 7-16.
-    - **Project Report**: Sequential Bayesian Inference Applied to Hurricane Tracking
-    """)
 
 def main():
     """Main dashboard application"""
@@ -1338,19 +918,33 @@ def main():
         st.error("Failed to load data files. Please run `python preprocess_streamboard.py` first.")
         return
     
-    # Sidebar navigation
-    st.sidebar.title("🌀 Streamboard")
-    st.sidebar.markdown("---")
+    # Sidebar - Hurricane Tracker style (React dashboard inspired)
+    st.sidebar.markdown("""
+    <div style="padding-bottom: 1rem; border-bottom: 1px solid #334155;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+            <i class="fa-solid fa-tornado" style="font-size: 1.5rem; color: #818cf8;"></i>
+            <span style="font-weight: 700; font-size: 1.25rem; color: white;">Hurricane Tracker</span>
+        </div>
+        <p style="color: #94a3b8; font-size: 0.875rem; margin: 0;">Model Comparison Dashboard</p>
+    </div>
+    """, unsafe_allow_html=True)
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)
     
-    pages = {
-        "📊 Model Comparison": page_model_comparison_overview,
-        "📈 Error Distributions": page_error_distributions,
-        "🌪️ Storm Performance": page_storm_performance,
-        "🗺️ Individual Storm Tracker": page_individual_storm_tracker,
-        "📖 Methodology": page_methodology
-    }
-    
-    selected_page = st.sidebar.radio("Navigate", list(pages.keys()))
+    # Nav with buttons and icons
+    nav_items = [
+        ("⚖️", "Model Comparison", page_model_comparison_overview),
+        ("📊", "Error Distributions", page_error_distributions),
+        ("🏆", "Storm Performance", page_storm_performance),
+        ("🗺️", "Storm Tracker", page_individual_storm_tracker),
+        ("📄", "Methodology", page_methodology),
+    ]
+    pages = {label: fn for _, label, fn in nav_items}
+    if "page" not in st.session_state:
+        st.session_state.page = "Model Comparison"
+    for icon, label, _ in nav_items:
+        if st.sidebar.button(f"{icon}  {label}", key=f"nav_{label}", use_container_width=True):
+            st.session_state.page = label
+    selected_page = st.session_state.page
     
     # Display selected page
     pages[selected_page](data)
@@ -1358,15 +952,10 @@ def main():
     # Footer
     st.sidebar.markdown("---")
     st.sidebar.markdown("""
-    <div style="text-align: center; color: #666; font-size: 0.9rem;">
-        <p><strong>Streamboard</strong></p>
-        <p>Hurricane Model Comparison Dashboard</p>
-        <p style="margin-top: 1rem;">Built with Streamlit & Plotly</p>
-        <p style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #ddd;">
-            <a href="https://personal-site-iota-weld.vercel.app" target="_blank" style="color: #3498db; text-decoration: none; font-weight: 500;">
-                By Sardor Sobirov
-            </a>
-        </p>
+    <div style="text-align: center; color: #64748b; font-size: 0.813rem; padding-top: 0.5rem;">
+        <a href="https://personal-site-iota-weld.vercel.app" target="_blank" style="color: #818cf8; text-decoration: none; font-weight: 500;">
+            By Sardor Sobirov
+        </a>
     </div>
     """, unsafe_allow_html=True)
 
